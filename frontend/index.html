@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DigitVision AI – Intelligent Handwritten Digit & Text Recognition</title>
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+
+    <!-- TOP APPLICATION NAVBAR -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="header-brand">
+                <img src="/assets/logo.png" alt="DigitVision AI Logo" class="brand-logo" id="header-logo">
+                <div class="brand-text">
+                    <div class="brand-title">
+                        DigitVision AI
+                        <span class="version-tag">PRO v2.0</span>
+                    </div>
+                    <div class="brand-subtitle">
+                        Intelligent Handwritten Digit, Number & Text Recognition Engine · CNN + Deep OCR
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="status-badge" title="Model tested on 10,000 MNIST samples">
+                    <span class="status-dot"></span>
+                    <span class="status-label">Online · 99.40% Accuracy</span>
+                </div>
+
+                <button class="icon-btn voice-toggle-btn active" id="btn-toggle-voice" title="Toggle Auto Speech Synthesis">
+                    <span class="btn-icon">🔊</span>
+                    <span class="btn-text">Voice On</span>
+                </button>
+
+                <button class="icon-btn sidebar-toggle-btn" id="btn-toggle-sidebar" title="Toggle Analytics Panel">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-text">Analytics</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP LAYOUT (CHAT STUDIO + ANALYTICS SIDEBAR) -->
+    <div class="app-container">
+
+        <!-- MAIN STUDIO / CHATBOT STREAM -->
+        <main class="chat-workspace">
+            <div class="chat-stream-wrapper" id="chat-stream-wrapper">
+                <div class="chat-stream" id="chat-stream">
+                    <!-- Initial Welcome Message from Assistant -->
+                    <div class="chat-message assistant" id="welcome-msg">
+                        <div class="msg-header">
+                            <img src="/assets/logo.png" class="msg-avatar" alt="DigitVision AI">
+                            <span class="msg-author">DigitVision AI</span>
+                            <span class="msg-role-tag">Neural Vision Assistant</span>
+                            <span class="msg-time" id="welcome-time">Just now</span>
+                        </div>
+                        <div class="msg-body">
+                            <p>👋 <strong>Welcome to DigitVision AI!</strong> I am your deep learning handwritten recognition assistant.</p>
+                            <p>I can instantly identify:</p>
+                            <ul class="feature-bullet-list">
+                                <li>🔢 <strong>Single Handwritten Digits (0–9)</strong> with 99.40% CNN accuracy and Grad-CAM visual heatmaps.</li>
+                                <li>📊 <strong>Multi-Digit Number Sequences</strong> (e.g. <code>42</code>, <code>2026</code>) with contour segmentation.</li>
+                                <li>📝 <strong>Handwritten Words, Names & Text</strong> (from <code>written_name_train_v2.csv</code>) using Multi-Scale Deep OCR.</li>
+                            </ul>
+                            <p>Use the <strong>Input Console below</strong> to <strong>Upload an Image</strong>, snap with your <strong>Live Camera</strong>, or <strong>Draw directly</strong> on the touch canvas!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC AI NEURAL SCANNER LOADING CARD -->
+                <div class="neural-scan-card" id="neural-scanner" style="display: none;">
+                    <div class="scanner-header">
+                        <div class="scanner-brand">
+                            <img src="/assets/logo.png" class="scanner-logo" alt="Scanning Logo">
+                            <div>
+                                <div class="scanner-title">🧠 AI Neural Scanner Deep Analyzing...</div>
+                                <div class="scanner-subtitle" id="scanner-source-text">Processing Input Image · Multi-Modal CNN & CRAFT OCR</div>
+                            </div>
+                        </div>
+                        <div class="scanner-badge">
+                            <span class="status-dot"></span>
+                            <span>Active Scanning</span>
+                        </div>
+                    </div>
+
+                    <div class="scanner-viewport">
+                        <div class="radar-sweep-bar"></div>
+                        <div class="grid-overlay"></div>
+                    </div>
+
+                    <div class="scanner-steps">
+                        <span class="step-pill">⚡ Illumination & Polarity Normalization</span>
+                        <span class="step-divider">·</span>
+                        <span class="step-pill">🔍 Multi-Scale CRAFT OCR</span>
+                        <span class="step-divider">·</span>
+                        <span class="step-pill">🔢 4-Stage ConvNet Character Inference</span>
+                        <span class="step-divider">·</span>
+                        <span class="step-pill">🎯 Grad-CAM Attention Heatmap</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ONE-SCREEN UNIFIED INPUT CONSOLE DOCK -->
+            <section class="input-dock" id="input-dock">
+                <div class="dock-header">
+                    <div class="dock-title">
+                        <span>⚡ Submit Any Handwritten Digit, Number or Text:</span>
+                        <span class="dock-subtitle">(Select preferred method below)</span>
+                    </div>
+                </div>
+
+                <!-- Input Method Tabs -->
+                <div class="dock-tabs-nav" role="tablist">
+                    <button class="dock-tab-btn active" data-tab="tab-upload">
+                        <span class="tab-icon">📁</span>
+                        <span>Upload Image</span>
+                    </button>
+                    <button class="dock-tab-btn" data-tab="tab-camera">
+                        <span class="tab-icon">📷</span>
+                        <span>Live Camera</span>
+                    </button>
+                    <button class="dock-tab-btn" data-tab="tab-draw">
+                        <span class="tab-icon">✍️</span>
+                        <span>Draw Digit</span>
+                    </button>
+                    <button class="dock-tab-btn" data-tab="tab-samples">
+                        <span class="tab-icon">🧪</span>
+                        <span>Sample Digits</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Upload Image -->
+                <div class="dock-tab-pane active" id="tab-upload">
+                    <div class="drop-zone" id="drop-zone">
+                        <input type="file" id="file-input" accept="image/png, image/jpeg, image/jpg" hidden>
+                        <div class="drop-content" id="drop-prompt">
+                            <div class="drop-icon">☁️</div>
+                            <div class="drop-text-primary">Drag & drop handwritten image here, or <span class="drop-browse">browse files</span></div>
+                            <div class="drop-text-secondary">Supports PNG, JPG, JPEG · Works with paper notes, handwritten names, and numbers</div>
+                            <div class="drop-clipboard-hint">💡 Tip: You can also paste an image directly from clipboard (Ctrl + V)</div>
+                        </div>
+
+                        <div class="drop-preview-wrapper" id="drop-preview-wrapper" style="display: none;">
+                            <img id="drop-preview-img" class="drop-preview-img" alt="Upload Preview">
+                            <div class="preview-actions">
+                                <button class="btn btn-primary" id="btn-analyze-upload">
+                                    <span>🚀 Analyze Uploaded Image</span>
+                                </button>
+                                <button class="btn btn-secondary" id="btn-cancel-upload">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Live Camera -->
+                <div class="dock-tab-pane" id="tab-camera">
+                    <div class="camera-container">
+                        <div class="camera-viewport-box">
+                            <video id="camera-video" playsinline autoplay muted></video>
+                            <canvas id="camera-snapshot-canvas" style="display: none;"></canvas>
+                            <div class="camera-target-reticle">
+                                <div class="reticle-corner tl"></div>
+                                <div class="reticle-corner tr"></div>
+                                <div class="reticle-corner bl"></div>
+                                <div class="reticle-corner br"></div>
+                                <div class="reticle-hint">Align handwritten digit/text inside box</div>
+                            </div>
+                        </div>
+
+                        <div class="camera-controls">
+                            <button class="btn btn-secondary" id="btn-start-camera">
+                                <span>🎥 Turn On Camera</span>
+                            </button>
+                            <button class="btn btn-secondary" id="btn-switch-camera" style="display: none;">
+                                <span>🔄 Flip Camera</span>
+                            </button>
+                            <button class="btn btn-primary" id="btn-capture-camera" style="display: none;">
+                                <span>📸 Capture & Analyze</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Draw Digit Canvas -->
+                <div class="dock-tab-pane" id="tab-draw">
+                    <div class="canvas-container">
+                        <div class="canvas-box">
+                            <canvas id="drawing-canvas" width="340" height="240"></canvas>
+                        </div>
+                        <div class="canvas-sidebar">
+                            <div class="canvas-tool-group">
+                                <label for="brush-slider" class="tool-label">
+                                    <span>Pen Thickness:</span>
+                                    <span id="brush-size-val" class="tool-val">20px</span>
+                                </label>
+                                <input type="range" id="brush-slider" min="10" max="36" value="20" class="tool-range">
+                            </div>
+
+                            <div class="canvas-hint">
+                                White pen on black canvas simulates standard MNIST digit distribution for high accuracy.
+                            </div>
+
+                            <div class="canvas-buttons">
+                                <button class="btn btn-primary" id="btn-analyze-draw">
+                                    <span>✍️ Recognize Drawn Digit</span>
+                                </button>
+                                <button class="btn btn-secondary" id="btn-clear-canvas">
+                                    <span>🗑️ Clear</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Sample Test Digits -->
+                <div class="dock-tab-pane" id="tab-samples">
+                    <div class="samples-instruction">
+                        Click any realistic paper digit to quick-test the model's empirical 100% test benchmark:
+                    </div>
+                    <div class="samples-grid" id="samples-grid">
+                        <!-- Populated dynamically via JS -->
+                        <div class="sample-loading">Loading verified paper samples...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- RIGHT SIDEBAR: MODEL ANALYTICS & HISTORY EXPLORER -->
+        <aside class="analytics-sidebar" id="analytics-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">⚡ Model Analytics</div>
+                <button class="sidebar-close-btn" id="btn-close-sidebar" title="Close Panel">✕</button>
+            </div>
+
+            <!-- Logo Banner in Sidebar -->
+            <div class="sidebar-logo-card">
+                <img src="/assets/logo.png" alt="DigitVision AI Logo" class="sidebar-logo-img">
+                <div class="sidebar-logo-caption">Intelligent Handwriting AI</div>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">TEST ACCURACY</div>
+                    <div class="metric-value accent-blue" id="metric-accuracy">99.40%</div>
+                    <div class="metric-footnote">On 10,000 Unseen MNIST Samples</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">TEST LOSS</div>
+                    <div class="metric-value accent-green" id="metric-loss">0.0170</div>
+                    <div class="metric-footnote">Categorical Crossentropy</div>
+                </div>
+            </div>
+
+            <!-- Sidebar Tabs -->
+            <div class="sidebar-tabs-nav">
+                <button class="side-tab-btn active" data-sidetab="sidetab-history">🕒 History</button>
+                <button class="side-tab-btn" data-sidetab="sidetab-matrix">📊 Matrix</button>
+                <button class="side-tab-btn" data-sidetab="sidetab-dataset">📋 Dataset</button>
+            </div>
+
+            <!-- Side Tab 1: History -->
+            <div class="side-tab-pane active" id="sidetab-history">
+                <div class="history-controls">
+                    <span class="history-count" id="history-count">Logged Inferences: 0</span>
+                    <div class="history-actions">
+                        <a href="/api/export_history_csv" class="btn-xs btn-outline" download="digitvision_history.csv" id="btn-export-csv">📥 CSV</a>
+                        <button class="btn-xs btn-outline-danger" id="btn-clear-history">🗑️ Clear</button>
+                    </div>
+                </div>
+                <div class="history-table-wrapper">
+                    <table class="history-table" id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Result</th>
+                                <th>Conf</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <tr><td colspan="4" class="empty-state">No predictions logged yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Side Tab 2: Confusion Matrix & Learning Curves -->
+            <div class="side-tab-pane" id="sidetab-matrix">
+                <div class="visual-figure">
+                    <div class="figure-title">10×10 Confusion Matrix (10,000 Test Samples)</div>
+                    <img src="/outputs/confusion_matrix.png" class="figure-img" alt="Confusion Matrix">
+                </div>
+                <div class="visual-figure">
+                    <div class="figure-title">Learning Curves (Accuracy & Loss)</div>
+                    <img src="/outputs/training_history.png" class="figure-img" alt="Training History">
+                </div>
+            </div>
+
+            <!-- Side Tab 3: Dataset Log -->
+            <div class="side-tab-pane" id="sidetab-dataset">
+                <div class="dataset-card">
+                    <div class="dataset-title">Dataset Inspection Log:</div>
+                    <p>Verified <code>written_name_train_v2.csv</code> & <code>written_name_test_v2.csv</code>.</p>
+                    <p>They contain handwritten names (e.g. <i>BALTHAZAR, SIMON</i>). With our integrated <strong>Multi-Modal CRAFT OCR & CNN Engine</strong>, the application recognizes both:</p>
+                    <ul class="dataset-list">
+                        <li><strong>Handwritten names & text words</strong> from uploaded dataset CSVs</li>
+                        <li><strong>Numerical digit sequences (0–9)</strong> trained on MNIST</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Reset Chat Button -->
+            <div class="sidebar-footer">
+                <button class="btn btn-secondary full-width" id="btn-reset-chat">🔄 Reset Chat Session</button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- MODAL POPUP FOR DETAILED GRAD-CAM INSPECTION -->
+    <div class="modal-backdrop" id="modal-backdrop" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title">Grad-CAM Neural Attention Explanation</div>
+                <button class="modal-close-btn" id="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT BUNDLE -->
+    <script src="/frontend/app.js"></script>
+</body>
+</html>
+

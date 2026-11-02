@@ -1,0 +1,26 @@
+# Python Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Large Model Binaries (EasyOCR weights auto-downloaded on first run)
+models/easyocr/*.pth
+models/easyocr/*.zip
+!models/easyocr/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & temp
+*.log
+scratch/
