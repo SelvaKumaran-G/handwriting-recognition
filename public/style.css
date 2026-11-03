@@ -363,16 +363,18 @@ body {
 }
 
 .identified-giant-text {
-    font-size: 64px;
+    font-size: 56px;
     font-weight: 900;
     color: var(--primary-blue);
-    line-height: 1.1;
-    margin: 6px 0;
-    word-break: break-all;
+    line-height: 1.15;
+    margin: 8px 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .identified-giant-text.long-text {
-    font-size: 34px;
+    font-size: 28px;
+    letter-spacing: -0.5px;
 }
 
 .identified-type-pill {
@@ -1348,15 +1350,20 @@ body {
 
 @media (max-width: 768px) {
     .header-inner {
-        padding: 10px 14px;
+        padding: 8px 12px;
+        gap: 8px;
     }
 
     .brand-logo {
-        height: 42px;
+        height: 38px;
     }
 
     .brand-title {
-        font-size: 17px;
+        font-size: 16px;
+    }
+
+    .version-tag {
+        display: none;
     }
 
     .brand-subtitle {
@@ -1367,47 +1374,141 @@ body {
         display: none;
     }
 
+    .status-badge {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
     .app-container {
-        padding: 12px;
-        gap: 16px;
+        padding: 8px;
+        gap: 12px;
     }
 
     .chat-stream-wrapper {
-        padding: 14px;
-        border-radius: var(--radius-lg);
+        padding: 10px;
+        border-radius: var(--radius-md);
+        min-height: 240px;
+        max-height: calc(100vh - 360px);
     }
 
     .result-main-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .identified-giant-text {
-        font-size: 48px;
+        font-size: 40px;
+    }
+
+    .identified-giant-text.long-text {
+        font-size: 22px;
+        word-break: break-word;
     }
 
     .dock-tabs-nav {
         overflow-x: auto;
+        padding-bottom: 2px;
+        gap: 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .dock-tabs-nav::-webkit-scrollbar {
+        display: none;
     }
 
     .dock-tab-btn {
         padding: 8px 10px;
         font-size: 12px;
         white-space: nowrap;
+        flex: 1 0 auto;
     }
 
     .canvas-container {
         flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .canvas-box {
+        width: 100%;
+        display: flex;
+        justify-content: center;
     }
 
     .canvas-box canvas {
         width: 100% !important;
-        max-width: 320px;
+        max-width: 280px !important;
+        aspect-ratio: 1 / 1;
         height: auto !important;
+        touch-action: none;
+    }
+
+    .canvas-controls {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .drop-zone {
+        padding: 18px 12px;
+    }
+
+    .drop-icon {
+        font-size: 28px;
     }
 
     .btn {
-        padding: 10px 16px;
-        font-size: 13px;
+        padding: 8px 14px;
+        font-size: 12.5px;
+    }
+
+    .user-thumbnail {
+        max-width: 100%;
+        max-height: 180px;
+    }
+
+    .annotated-img {
+        max-height: 220px;
+    }
+
+    .samples-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-brand {
+        gap: 8px;
+    }
+
+    .brand-logo {
+        height: 34px;
+    }
+
+    .brand-title {
+        font-size: 14.5px;
+    }
+
+    .status-badge {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+
+    .chat-message {
+        padding: 10px 12px;
+    }
+
+    .identified-giant-text {
+        font-size: 34px;
+    }
+
+    .identified-giant-text.long-text {
+        font-size: 20px;
+    }
+
+    .canvas-box canvas {
+        max-width: 250px !important;
     }
 }
 
