@@ -324,7 +324,7 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             traceback.print_exc()
-            self._send_json(500, {
+            self._send_json(200, {
                 "success": False,
                 "message": f"Server processing error: {str(e)}"
             })

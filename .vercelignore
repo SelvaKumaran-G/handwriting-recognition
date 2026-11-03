@@ -9,6 +9,8 @@ models/best_digit_model.keras
 models/easyocr/
 
 # Ignore local training & test scripts
+export_weights.py
+numpy_forward.py
 train_model.py
 test_system.py
 export_samples.py

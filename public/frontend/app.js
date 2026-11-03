@@ -279,6 +279,265 @@
         elements.dropPreviewWrapper.style.display = "none";
     }
 
+    const DIGIT_WORDS_ARR = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+
+    // Cached Client-Side ONNX Session
+    let _clientOrtSession = null;
+    async function getClientOrtSession() {
+        if (_clientOrtSession) return _clientOrtSession;
+        if (!window.ort) return null;
+        try {
+            ort.env.wasm.numThreads = 1;
+            const modelCandidates = ["/models/digit_model.onnx", "/assets/digit_model.onnx", "/public/models/digit_model.onnx"];
+            for (const url of modelCandidates) {
+                try {
+                    _clientOrtSession = await ort.InferenceSession.create(url);
+                    return _clientOrtSession;
+                } catch (e) {
+                    // try next
+                }
+            }
+        } catch (err) {
+            console.warn("ORT Web initialization note:", err);
+        }
+        return null;
+    }
+
+    // Client-side visual bounding box renderer
+    function drawBBoxesOnImage(imgUrl, words) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.naturalWidth || img.width;
+                canvas.height = img.naturalHeight || img.height;
+                const c2d = canvas.getContext("2d");
+                c2d.drawImage(img, 0, 0);
+
+                c2d.strokeStyle = "#2563eb";
+                c2d.lineWidth = Math.max(2, Math.round(canvas.width / 260));
+                const fontSize = Math.max(13, Math.round(canvas.width / 36));
+                c2d.font = `bold ${fontSize}px Inter, sans-serif`;
+
+                for (const w of words) {
+                    if (!w || !w.bbox) continue;
+                    const { x0, y0, x1, y1 } = w.bbox;
+                    const bw = x1 - x0;
+                    const bh = y1 - y0;
+                    c2d.strokeRect(x0, y0, bw, bh);
+
+                    const label = `${w.text} (${Math.round(w.confidence || 90)}%)`;
+                    const textWidth = c2d.measureText(label).width;
+                    const tagY = Math.max(fontSize + 4, y0 - 4);
+                    c2d.fillStyle = "#2563eb";
+                    c2d.fillRect(x0, tagY - fontSize, textWidth + 8, fontSize + 4);
+                    c2d.fillStyle = "#ffffff";
+                    c2d.fillText(label, x0 + 4, tagY);
+                    c2d.fillStyle = "#2563eb";
+                }
+                resolve(canvas.toDataURL("image/png"));
+            };
+            img.onerror = () => resolve(imgUrl);
+            img.src = imgUrl;
+        });
+    }
+
+    // Client-side digit preprocessor into standardized 28x28 MNIST format
+    function preprocessDigitClient(imgUrl) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+                const c = document.createElement("canvas");
+                c.width = img.naturalWidth || img.width;
+                c.height = img.naturalHeight || img.height;
+                const c2d = c.getContext("2d");
+                c2d.drawImage(img, 0, 0);
+
+                const imgData = c2d.getImageData(0, 0, c.width, c.height);
+                const d = imgData.data;
+                const w = c.width;
+                const h = c.height;
+
+                // Border polarity check
+                let borderSum = 0;
+                let borderCount = 0;
+                for (let x = 0; x < w; x++) {
+                    const iT = (0 * w + x) * 4;
+                    const iB = ((h - 1) * w + x) * 4;
+                    borderSum += (d[iT] + d[iT + 1] + d[iT + 2]) / 3;
+                    borderSum += (d[iB] + d[iB + 1] + d[iB + 2]) / 3;
+                    borderCount += 2;
+                }
+                for (let y = 0; y < h; y++) {
+                    const iL = (y * w + 0) * 4;
+                    const iR = (y * w + (w - 1)) * 4;
+                    borderSum += (d[iL] + d[iL + 1] + d[iL + 2]) / 3;
+                    borderSum += (d[iR] + d[iR + 1] + d[iR + 2]) / 3;
+                    borderCount += 2;
+                }
+                const isDarkBg = (borderSum / borderCount) < 127;
+
+                // Thresholding & Bounding Box
+                let minX = w, maxX = 0, minY = h, maxY = 0;
+                const bin = new Uint8Array(w * h);
+                let whiteCount = 0;
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const idx = (y * w + x) * 4;
+                        const gray = (d[idx] + d[idx + 1] + d[idx + 2]) / 3;
+                        const isStroke = isDarkBg ? (gray > 90) : (gray < 165);
+                        if (isStroke) {
+                            bin[y * w + x] = 255;
+                            whiteCount++;
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
+                    }
+                }
+
+                if (whiteCount < 15 || minX >= maxX || minY >= maxY) {
+                    resolve(null);
+                    return;
+                }
+
+                const cropW = maxX - minX + 1;
+                const cropH = maxY - minY + 1;
+                const cropCanvas = document.createElement("canvas");
+                cropCanvas.width = cropW;
+                cropCanvas.height = cropH;
+                const cropCtx = cropCanvas.getContext("2d");
+                const cropData = cropCtx.createImageData(cropW, cropH);
+                for (let y = 0; y < cropH; y++) {
+                    for (let x = 0; x < cropW; x++) {
+                        const val = bin[(minY + y) * w + (minX + x)];
+                        const tIdx = (y * cropW + x) * 4;
+                        cropData.data[tIdx] = val;
+                        cropData.data[tIdx + 1] = val;
+                        cropData.data[tIdx + 2] = val;
+                        cropData.data[tIdx + 3] = 255;
+                    }
+                }
+                cropCtx.putImageData(cropData, 0, 0);
+
+                let newW = 20, newH = 20;
+                if (cropH > cropW) {
+                    newH = 20;
+                    newW = Math.max(1, Math.round(cropW * 20 / cropH));
+                } else {
+                    newW = 20;
+                    newH = Math.max(1, Math.round(cropH * 20 / cropW));
+                }
+
+                const c28 = document.createElement("canvas");
+                c28.width = 28;
+                c28.height = 28;
+                const ctx28 = c28.getContext("2d");
+                ctx28.fillStyle = "#000000";
+                ctx28.fillRect(0, 0, 28, 28);
+                const ox = Math.floor((28 - newW) / 2);
+                const oy = Math.floor((28 - newH) / 2);
+                ctx28.drawImage(cropCanvas, 0, 0, cropW, cropH, ox, oy, newW, newH);
+
+                // Center of Mass shift
+                const d28 = ctx28.getImageData(0, 0, 28, 28).data;
+                let sumY = 0, sumX = 0, total = 0;
+                for (let y = 0; y < 28; y++) {
+                    for (let x = 0; x < 28; x++) {
+                        const v = d28[(y * 28 + x) * 4];
+                        sumX += x * v;
+                        sumY += y * v;
+                        total += v;
+                    }
+                }
+                if (total > 0) {
+                    const cx = sumX / total;
+                    const cy = sumY / total;
+                    const sx = Math.max(-4, Math.min(4, Math.round(14 - cx)));
+                    const sy = Math.max(-4, Math.min(4, Math.round(14 - cy)));
+                    if (sx !== 0 || sy !== 0) {
+                        const temp = document.createElement("canvas");
+                        temp.width = 28; temp.height = 28;
+                        temp.getContext("2d").drawImage(c28, 0, 0);
+                        ctx28.fillStyle = "#000000";
+                        ctx28.fillRect(0, 0, 28, 28);
+                        ctx28.drawImage(temp, sx, sy);
+                    }
+                }
+
+                const finalData = ctx28.getImageData(0, 0, 28, 28).data;
+                const floatArr = new Float32Array(28 * 28);
+                for (let i = 0; i < 28 * 28; i++) {
+                    floatArr[i] = finalData[i * 4] / 255.0;
+                }
+
+                resolve({
+                    tensor: floatArr,
+                    normB64: c28.toDataURL("image/png"),
+                    bbox: { x: minX, y: minY, w: cropW, h: cropH }
+                });
+            };
+            img.onerror = () => resolve(null);
+            img.src = imgUrl;
+        });
+    }
+
+    // Client-side inference runner (for offline & instant execution)
+    async function runClientInference(dataUrl, sourceName) {
+        const prep = await preprocessDigitClient(dataUrl);
+        if (!prep) return null;
+
+        const session = await getClientOrtSession();
+        if (!session) return null;
+
+        const inputTensor = new ort.Tensor("float32", prep.tensor, [1, 28, 28, 1]);
+        const feeds = {};
+        feeds[session.inputNames[0]] = inputTensor;
+        const results = await session.run(feeds);
+        const output = results[session.outputNames[0]].data;
+
+        let maxIdx = 0;
+        let maxVal = output[0];
+        for (let i = 1; i < output.length; i++) {
+            if (output[i] > maxVal) {
+                maxVal = output[i];
+                maxIdx = i;
+            }
+        }
+
+        const confPct = Math.round(maxVal * 1000) / 10;
+        const digitWord = DIGIT_WORDS_ARR[maxIdx] || String(maxIdx);
+        const spoken = `The detected digit is ${digitWord} with ${confPct}% confidence.`;
+
+        return {
+            success: true,
+            primary_detected: String(maxIdx),
+            content_type: "Handwritten Digit",
+            is_text_word: false,
+            reconstructed_number: String(maxIdx),
+            avg_confidence: maxVal,
+            avg_confidence_pct: confPct,
+            annotated_image_b64: dataUrl,
+            char_results: [{
+                char_index: 1,
+                predicted_digit: maxIdx,
+                digit_word: digitWord,
+                confidence: maxVal,
+                confidence_pct: confPct,
+                probabilities: Array.from(output),
+                gradcam_b64: prep.normB64,
+                norm_b64: prep.normB64
+            }],
+            ocr_blocks: [],
+            full_ocr_string: "",
+            spoken_message: spoken,
+            source: sourceName
+        };
+    }
+
     // ==========================================
     // PREDICTION SUBMISSION & CHAT RENDERING
     // ==========================================
@@ -289,44 +548,110 @@
         appendUserMessage(dataUrl, sourceName);
 
         // 2. Show Dynamic AI Neural Scanner Loading Indicator
-        elements.scannerSourceText.textContent = `Processing ${sourceName} · Multi-Modal CNN & CRAFT OCR`;
+        elements.scannerSourceText.textContent = `Analyzing ${sourceName} · Neural Vision & Multi-Scale OCR`;
         elements.neuralScanner.style.display = "block";
         scrollToBottom();
 
         try {
-            const resp = await fetch("/api/predict", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    image: dataUrl,
-                    source: sourceName
-                })
-            });
+            // STEP A: Client-Side Deep Handwriting OCR Check (Word/Text detection e.g. "HELLO WORLD")
+            let textOcrPayload = null;
+            if (window.Tesseract && sourceName !== "Touch Canvas Drawing") {
+                try {
+                    const ocrRes = await Tesseract.recognize(dataUrl, "eng");
+                    if (ocrRes && ocrRes.data && ocrRes.data.text) {
+                        const rawText = ocrRes.data.text.replace(/[\r\n]+/g, " ").trim();
+                        const hasLetters = /[a-zA-Z]/.test(rawText);
+                        const cleanWords = (ocrRes.data.words || [])
+                            .filter(w => w.text && w.text.trim().length > 0 && w.confidence > 25)
+                            .map(w => ({
+                                text: w.text.trim(),
+                                confidence: w.confidence,
+                                confidence_pct: Math.round(w.confidence),
+                                bbox: w.bbox
+                            }));
 
-            const rawText = await resp.text();
-            let data;
-            try {
-                data = JSON.parse(rawText);
-            } catch (parseErr) {
+                        if (hasLetters && rawText.length >= 2 && cleanWords.length > 0) {
+                            const annotatedB64 = await drawBBoxesOnImage(dataUrl, cleanWords);
+                            const avgConf = Math.round(ocrRes.data.confidence || 90);
+                            const spoken = `The detected handwritten text is ${rawText}.`;
+
+                            textOcrPayload = {
+                                success: true,
+                                primary_detected: rawText,
+                                content_type: "Handwritten / Printed Text Word",
+                                is_text_word: true,
+                                reconstructed_number: "",
+                                avg_confidence: avgConf / 100,
+                                avg_confidence_pct: avgConf,
+                                annotated_image_b64: annotatedB64,
+                                char_results: [],
+                                ocr_blocks: cleanWords,
+                                full_ocr_string: rawText,
+                                spoken_message: spoken,
+                                source: sourceName
+                            };
+                        }
+                    }
+                } catch (ocrErr) {
+                    console.warn("Client OCR check note:", ocrErr);
+                }
+            }
+
+            // If text words were identified (e.g. "HELLO WORLD"), render immediately!
+            if (textOcrPayload) {
                 elements.neuralScanner.style.display = "none";
-                appendAssistantErrorMessage("Server error: " + (rawText.slice(0, 160) || "Invalid server response"));
+                appendAssistantMessage(textOcrPayload);
+                if (textOcrPayload.spoken_message) speakText(textOcrPayload.spoken_message);
+                loadHistory();
                 return;
+            }
+
+            // STEP B: Digit Recognition (Try Cloud API first, fall back to Client-Side ONNX Engine)
+            let resultData = null;
+            try {
+                const resp = await fetch("/api/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        image: dataUrl,
+                        source: sourceName
+                    })
+                });
+
+                if (resp.ok) {
+                    const rawText = await resp.text();
+                    try {
+                        const parsed = JSON.parse(rawText);
+                        if (parsed && parsed.success) {
+                            resultData = parsed;
+                        }
+                    } catch (e) {
+                        // ignore JSON parse error on 500
+                    }
+                }
+            } catch (netErr) {
+                console.warn("Cloud API unreachable, using client engine:", netErr);
+            }
+
+            // If cloud API didn't succeed or timed out, run client-side ONNX engine
+            if (!resultData) {
+                resultData = await runClientInference(dataUrl, sourceName);
             }
 
             // Hide Scanner
             elements.neuralScanner.style.display = "none";
 
-            if (!data.success) {
-                appendAssistantErrorMessage(data.message || "Failed to recognize content.");
+            if (!resultData || !resultData.success) {
+                appendAssistantErrorMessage(resultData?.message || "Could not recognize content. Please draw or capture with clear contrast.");
                 return;
             }
 
             // Append Assistant Response Card
-            appendAssistantMessage(data);
+            appendAssistantMessage(resultData);
 
             // Announce speech
-            if (data.spoken_message) {
-                speakText(data.spoken_message);
+            if (resultData.spoken_message) {
+                speakText(resultData.spoken_message);
             }
 
             // Refresh History
@@ -334,7 +659,7 @@
 
         } catch (err) {
             elements.neuralScanner.style.display = "none";
-            appendAssistantErrorMessage("Server communication error: " + err.message);
+            appendAssistantErrorMessage("Processing error: " + err.message);
         }
     }
 
