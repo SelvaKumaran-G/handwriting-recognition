@@ -1,0 +1,26 @@
+# Ignore large training data and CSVs from Vercel deployment
+written_name_train_v2.csv
+written_name_test_v2.csv
+data/mnist.npz
+data/prediction_history.csv
+
+# Ignore heavy Keras model (ONNX model in models/digit_model.onnx is used instead)
+models/best_digit_model.keras
+models/easyocr/
+
+# Ignore local training & test scripts
+train_model.py
+test_system.py
+export_samples.py
+generate_logo.py
+convert_to_onnx.py
+test_vercel_api.py
+app.py
+requirements-full.txt
+
+# Python virtual environment & cache
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.log

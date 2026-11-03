@@ -5,6 +5,7 @@
 ![Accuracy](https://img.shields.io/badge/Test%20Accuracy-99.40%25-brightgreen)
 ![Frontend](https://img.shields.io/badge/Frontend-HTML5%20%2F%20CSS3%20%2F%20JS-blue)
 ![Backend](https://img.shields.io/badge/Backend-Starlette%20%2F%20Uvicorn-purple)
+![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 A production-grade, college final-year engineering project for **Intelligent Handwritten Digit, Multi-Digit & Word Recognition** powered by a Convolutional Neural Network (CNN) and Multi-Scale CRAFT Deep Vision OCR.
@@ -72,7 +73,19 @@ A production-grade, college final-year engineering project for **Intelligent Han
 
 ---
 
-## 🛠️ Installation & Quick Start
+## ⚡ Instant Vercel Deployment
+
+DigitVision AI is optimized for serverless cloud deployment:
+
+- **Ultra-lightweight bundle**: Replaces heavy TensorFlow/PyTorch with **ONNX Runtime** (~70MB total vs Vercel's 500MB limit).
+- **Edge Static Serving**: HTML5/CSS3/JS UI served instantly via Vercel CDN from `/public`.
+- **Serverless API**: Python function in `/api/predict.py` with ONNX CPU inference (<50ms per digit).
+
+Simply connect your GitHub repository to [vercel.com](https://vercel.com) and click **Deploy**!
+
+---
+
+## 🛠️ Local Installation & Quick Start
 
 ### 1. Clone the Repository
 ```bash
@@ -87,6 +100,13 @@ python -m venv .venv
 .venv\Scripts\activate
 # On Linux / macOS:
 source .venv/bin/activate
+
+# For production serverless runtime:
+pip install -r requirements.txt
+
+# For full local development (TensorFlow training + EasyOCR):
+pip install -r requirements-full.txt
+```
 
 pip install -r requirements.txt
 ```

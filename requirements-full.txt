@@ -1,0 +1,16 @@
+# DigitVision AI - Full Development & Training Requirements (Local Machine)
+# For retraining CNN models, running EasyOCR, and generating evaluation matrices
+tensorflow>=2.15.0
+starlette>=0.30.0
+uvicorn>=0.28.0
+easyocr>=1.7.0
+torch>=2.0.0
+opencv-python>=4.8.0
+pillow>=10.0.0
+numpy>=1.24.0,<2.0.0
+pandas>=2.0.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+scikit-learn>=1.4.0
+onnxruntime>=1.16.0
+tf2onnx>=1.16.0
