@@ -1,5 +1,5 @@
-# DigitVision AI - Production Serverless Runtime Requirements (Vercel / Cloud)
-# Lightweight dependencies: ~70MB total uncompressed (Vercel Lambda limit: 500MB)
+# DigitVision AI - Production Serverless Runtime Requirements (Vercel)
+# Pure Python binary wheels: zero external C-library (.so) dependencies
 numpy>=1.24.0,<2.0.0
-opencv-python-headless>=4.8.0
+Pillow>=10.0.0
 onnxruntime>=1.16.0

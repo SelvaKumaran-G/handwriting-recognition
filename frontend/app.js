@@ -303,7 +303,15 @@
                 })
             });
 
-            const data = await resp.json();
+            const rawText = await resp.text();
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch (parseErr) {
+                elements.neuralScanner.style.display = "none";
+                appendAssistantErrorMessage("Server error: " + (rawText.slice(0, 160) || "Invalid server response"));
+                return;
+            }
 
             // Hide Scanner
             elements.neuralScanner.style.display = "none";
@@ -487,7 +495,15 @@
     async function loadMetrics() {
         try {
             const resp = await fetch("/api/metrics");
-            const data = await resp.json();
+            const rawText = await resp.text();
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch (parseErr) {
+                elements.neuralScanner.style.display = "none";
+                appendAssistantErrorMessage("Server error: " + (rawText.slice(0, 160) || "Invalid server response"));
+                return;
+            }
             if (data.test_accuracy) {
                 elements.metricAccuracy.textContent = (data.test_accuracy * 100).toFixed(2) + "%";
             }
